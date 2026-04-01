@@ -63,7 +63,7 @@ jobs:
           fi
 
       - name: Загрузка Android APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: android-${{ env.BUILD_MODE }}
           path: dist/*
@@ -119,7 +119,7 @@ jobs:
           fi
 
       - name: Загрузка iOS-артефакта
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ios-${{ env.BUILD_MODE }}
           path: dist/*
@@ -206,20 +206,13 @@ jobs:
             exit 1
           fi
 
-          ditto -c -k --keepParent "$APP_PATH" "dist/vkpn-macos-$BUILD_MODE.zip"
-          hdiutil create \
-            -volname "VkPN" \
-            -srcfolder "$APP_PATH" \
-            -ov \
-            -format UDZO \
-            "dist/vkpn-macos-$BUILD_MODE.dmg"
           pkgbuild \
             --component "$APP_PATH" \
             --install-location /Applications \
             "dist/vkpn-macos-$BUILD_MODE.pkg"
 
       - name: Загрузка macOS-артефакта
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: macos-${{ env.BUILD_MODE }}
           path: dist/*
@@ -227,7 +220,7 @@ jobs:
 
       - name: Загрузка macOS логов
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: macos-${{ env.BUILD_MODE }}-logs
           path: |
@@ -275,7 +268,7 @@ jobs:
 
           flutter build windows "--$env:BUILD_MODE"
 
-          Compress-Archive -Path "build/windows/x64/runner/$runnerMode/*" -DestinationPath "dist/vkpn-windows-x64-$env:BUILD_MODE.zip" -Force
+          Compress-Archive -Path "build/windows/x64/runner/$runnerMode/*" -DestinationPath "dist/vkpn-windows-x64-portable-$env:BUILD_MODE.zip" -Force
 
       - name: Установка Inno Setup
         run: choco install innosetup -y
@@ -296,7 +289,7 @@ jobs:
             "$PWD/packaging/windows/vkpn.iss"
 
       - name: Загрузка Windows-артефакта
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: windows-${{ env.BUILD_MODE }}
           path: dist/*
@@ -354,7 +347,7 @@ jobs:
         run: bash packaging/linux/build-appimage.sh "$BUILD_MODE"
 
       - name: Загрузка Linux-артефакта
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: linux-${{ env.BUILD_MODE }}
           path: dist/*
@@ -380,31 +373,31 @@ jobs:
           fetch-tags: true
 
       - name: Загрузка release Android
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: android-release
           path: dist
 
       - name: Загрузка release iOS
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: ios-release
           path: dist
 
       - name: Загрузка release macOS
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: macos-release
           path: dist
 
       - name: Загрузка release Windows
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: windows-release
           path: dist
 
       - name: Загрузка release Linux
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: linux-release
           path: dist
@@ -460,10 +453,8 @@ jobs:
             echo "release_name=$NEXT_TAG"
             echo "android_name=vkpn-${NEXT_TAG}-android.apk"
             echo "ios_name=vkpn-${NEXT_TAG}-ios-unsigned.ipa"
-            echo "macos_zip_name=vkpn-${NEXT_TAG}-macos.zip"
-            echo "macos_dmg_name=vkpn-${NEXT_TAG}-macos.dmg"
-            echo "macos_pkg_name=vkpn-${NEXT_TAG}-macos.pkg"
-            echo "windows_zip_name=vkpn-${NEXT_TAG}-windows-x64.zip"
+            echo "macos_name=vkpn-${NEXT_TAG}-macos.pkg"
+            echo "windows_zip_name=vkpn-${NEXT_TAG}-windows-x64-portable.zip"
             echo "windows_setup_name=vkpn-${NEXT_TAG}-windows-x64-setup.exe"
             echo "linux_tar_name=vkpn-${NEXT_TAG}-linux-x64.tar.gz"
             echo "linux_deb_name=vkpn-${NEXT_TAG}-linux-amd64.deb"
@@ -519,9 +510,7 @@ jobs:
         env:
           ANDROID_NAME: ${{ steps.meta.outputs.android_name }}
           IOS_NAME: ${{ steps.meta.outputs.ios_name }}
-          MACOS_ZIP_NAME: ${{ steps.meta.outputs.macos_zip_name }}
-          MACOS_DMG_NAME: ${{ steps.meta.outputs.macos_dmg_name }}
-          MACOS_PKG_NAME: ${{ steps.meta.outputs.macos_pkg_name }}
+          MACOS_NAME: ${{ steps.meta.outputs.macos_name }}
           WINDOWS_ZIP_NAME: ${{ steps.meta.outputs.windows_zip_name }}
           WINDOWS_SETUP_NAME: ${{ steps.meta.outputs.windows_setup_name }}
           LINUX_TAR_NAME: ${{ steps.meta.outputs.linux_tar_name }}
@@ -530,10 +519,8 @@ jobs:
         run: |
           mv dist/app-release.apk "dist/$ANDROID_NAME"
           mv dist/vkpn-ios-release-unsigned.ipa "dist/$IOS_NAME"
-          mv dist/vkpn-macos-release.zip "dist/$MACOS_ZIP_NAME"
-          mv dist/vkpn-macos-release.dmg "dist/$MACOS_DMG_NAME"
-          mv dist/vkpn-macos-release.pkg "dist/$MACOS_PKG_NAME"
-          mv dist/vkpn-windows-x64-release.zip "dist/$WINDOWS_ZIP_NAME"
+          mv dist/vkpn-macos-release.pkg "dist/$MACOS_NAME"
+          mv dist/vkpn-windows-x64-portable-release.zip "dist/$WINDOWS_ZIP_NAME"
           mv dist/vkpn-windows-x64-setup.exe "dist/$WINDOWS_SETUP_NAME"
           mv dist/vkpn-linux-x64-release.tar.gz "dist/$LINUX_TAR_NAME"
           mv dist/vkpn-linux-amd64-release.deb "dist/$LINUX_DEB_NAME"
@@ -546,9 +533,7 @@ jobs:
           files: |
             dist/${{ steps.meta.outputs.android_name }}
             dist/${{ steps.meta.outputs.ios_name }}
-            dist/${{ steps.meta.outputs.macos_zip_name }}
-            dist/${{ steps.meta.outputs.macos_dmg_name }}
-            dist/${{ steps.meta.outputs.macos_pkg_name }}
+            dist/${{ steps.meta.outputs.macos_name }}
             dist/${{ steps.meta.outputs.windows_zip_name }}
             dist/${{ steps.meta.outputs.windows_setup_name }}
             dist/${{ steps.meta.outputs.linux_tar_name }}

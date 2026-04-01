@@ -50,7 +50,25 @@ jobs:
       - name: Получение зависимостей
         run: flutter pub get
 
+      - name: Подготовка Android keystore
+        if: env.BUILD_MODE == 'release'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Секрет ANDROID_KEYSTORE_BASE64 не задан."
+            exit 1
+          fi
+
+          mkdir -p "$RUNNER_TEMP/android-signing"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/android-signing/release.jks"
+
       - name: Сборка Android APK
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ env.BUILD_MODE == 'release' && format('{0}/android-signing/release.jks', runner.temp) || '' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ env.BUILD_MODE == 'release' && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
+          ANDROID_KEY_ALIAS: ${{ env.BUILD_MODE == 'release' && secrets.ANDROID_KEY_ALIAS || '' }}
+          ANDROID_KEY_PASSWORD: ${{ env.BUILD_MODE == 'release' && secrets.ANDROID_KEY_PASSWORD || '' }}
         run: |
           mkdir -p dist
 
@@ -58,6 +76,11 @@ jobs:
             flutter build apk --debug
             cp build/app/outputs/flutter-apk/app-debug.apk dist/app-debug.apk
           else
+            if [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+              echo "Не заданы секреты для подписи Android."
+              exit 1
+            fi
+
             flutter build apk --release
             cp build/app/outputs/flutter-apk/app-release.apk dist/app-release.apk
           fi

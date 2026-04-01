@@ -94,7 +94,6 @@ jobs:
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           KEYSTORE_TYPE="$(
             keytool -list -v \
@@ -116,12 +115,6 @@ jobs:
             exit 1
           fi
 
-          if [ "$KEYSTORE_TYPE" = "PKCS12" ] && [ "$ANDROID_KEY_PASSWORD" != "$ANDROID_KEYSTORE_PASSWORD" ]; then
-            echo "Обнаружен PKCS12 keystore. Для такого хранилища key password обычно совпадает со store password."
-            echo "Установите ANDROID_KEY_PASSWORD равным ANDROID_KEYSTORE_PASSWORD или создайте keystore с -storetype JKS."
-            exit 1
-          fi
-
           echo "ANDROID_KEYSTORE_TYPE=$KEYSTORE_TYPE" >> "$GITHUB_ENV"
 
           if ! keytool -importkeystore \
@@ -129,13 +122,13 @@ jobs:
             -srcstoretype "$KEYSTORE_TYPE" \
             -srcstorepass "$ANDROID_KEYSTORE_PASSWORD" \
             -srcalias "$ANDROID_KEY_ALIAS" \
-            -srckeypass "$ANDROID_KEY_PASSWORD" \
+            -srckeypass "$ANDROID_KEYSTORE_PASSWORD" \
             -destkeystore "$RUNNER_TEMP/android-signing/keystore-check.p12" \
             -deststoretype PKCS12 \
             -deststorepass "android-ci-check" \
             -destkeypass "android-ci-check" \
             -noprompt >/dev/null 2>&1; then
-            echo "Не удалось прочитать ключ из Android keystore. Проверьте ANDROID_KEY_ALIAS и ANDROID_KEY_PASSWORD."
+            echo "Не удалось прочитать ключ из Android keystore. Проверьте ANDROID_KEY_ALIAS и ANDROID_KEYSTORE_PASSWORD."
             exit 1
           fi
 
@@ -144,7 +137,6 @@ jobs:
           ANDROID_KEYSTORE_PATH: ${{ env.BUILD_MODE == 'release' && format('{0}/android-signing/release.jks', runner.temp) || '' }}
           ANDROID_KEYSTORE_PASSWORD: ${{ env.BUILD_MODE == 'release' && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
           ANDROID_KEY_ALIAS: ${{ env.BUILD_MODE == 'release' && secrets.ANDROID_KEY_ALIAS || '' }}
-          ANDROID_KEY_PASSWORD: ${{ env.BUILD_MODE == 'release' && secrets.ANDROID_KEY_PASSWORD || '' }}
         run: |
           mkdir -p dist
 
@@ -152,7 +144,7 @@ jobs:
             flutter build apk --debug
             cp build/app/outputs/flutter-apk/app-debug.apk dist/app-debug.apk
           else
-            if [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            if [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ]; then
               echo "Не заданы секреты для подписи Android."
               exit 1
             fi

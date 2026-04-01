@@ -9,12 +9,10 @@ val signingKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
 val signingKeystoreType = System.getenv("ANDROID_KEYSTORE_TYPE")
 val signingKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
 val signingKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
-val signingKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
 val hasReleaseSigning =
     !signingKeystorePath.isNullOrBlank() &&
         !signingKeystorePassword.isNullOrBlank() &&
-        !signingKeyAlias.isNullOrBlank() &&
-        !signingKeyPassword.isNullOrBlank()
+        !signingKeyAlias.isNullOrBlank()
 
 android {
     namespace = "space.iscreation.vkpn"
@@ -53,7 +51,7 @@ android {
                 storeType = signingKeystoreType
                 storePassword = signingKeystorePassword
                 keyAlias = signingKeyAlias
-                keyPassword = signingKeyPassword
+                keyPassword = signingKeystorePassword
             }
         }
     }

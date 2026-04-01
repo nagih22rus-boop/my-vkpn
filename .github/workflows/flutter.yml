@@ -27,22 +27,34 @@ env:
 
 jobs:
   prepare-assets:
-    name: Prepare shared build assets
+    name: Prepare native build assets
     runs-on: ubuntu-latest
     steps:
       - name: Проверка кода
         uses: actions/checkout@v6
 
-      - name: Загрузка общих build-ассетов
+      - name: Загрузка нативных build-ассетов
         run: bash scripts/fetch_vkturn_binaries.sh all
 
-      - name: Загрузка архива build-ассетов
+      - name: Загрузка Android build-ассета
         uses: actions/upload-artifact@v6
         with:
-          name: shared-build-assets
-          path: |
-            assets/bin
-            android/app/src/main/jniLibs/arm64-v8a
+          name: android-build-asset
+          path: android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
+          if-no-files-found: error
+
+      - name: Загрузка macOS build-ассета
+        uses: actions/upload-artifact@v6
+        with:
+          name: macos-build-asset
+          path: assets/bin/client-darwin-arm64
+          if-no-files-found: error
+
+      - name: Загрузка Windows build-ассета
+        uses: actions/upload-artifact@v6
+        with:
+          name: windows-build-asset
+          path: assets/bin/client-windows-amd64.exe
           if-no-files-found: error
 
   android:
@@ -53,11 +65,14 @@ jobs:
       - name: Проверка кода
         uses: actions/checkout@v6
 
-      - name: Получение общих build-ассетов
+      - name: Получение Android build-ассета
         uses: actions/download-artifact@v7
         with:
-          name: shared-build-assets
-          path: .
+          name: android-build-asset
+          path: android/app/src/main/jniLibs/arm64-v8a
+
+      - name: Создание директории desktop-ассетов
+        run: mkdir -p assets/bin
 
       - name: Настройка Java
         uses: actions/setup-java@v5
@@ -168,11 +183,8 @@ jobs:
       - name: Проверка кода
         uses: actions/checkout@v6
 
-      - name: Получение общих build-ассетов
-        uses: actions/download-artifact@v7
-        with:
-          name: shared-build-assets
-          path: .
+      - name: Создание директории desktop-ассетов
+        run: mkdir -p assets/bin
 
       - name: Настройка Flutter
         uses: subosito/flutter-action@v2
@@ -231,11 +243,11 @@ jobs:
       - name: Проверка кода
         uses: actions/checkout@v6
 
-      - name: Получение общих build-ассетов
+      - name: Получение macOS build-ассета
         uses: actions/download-artifact@v7
         with:
-          name: shared-build-assets
-          path: .
+          name: macos-build-asset
+          path: assets/bin
 
       - name: Настройка Flutter
         uses: subosito/flutter-action@v2
@@ -342,11 +354,11 @@ jobs:
       - name: Проверка кода
         uses: actions/checkout@v6
 
-      - name: Получение общих build-ассетов
+      - name: Получение Windows build-ассета
         uses: actions/download-artifact@v7
         with:
-          name: shared-build-assets
-          path: .
+          name: windows-build-asset
+          path: assets/bin
 
       - name: Настройка Flutter
         uses: subosito/flutter-action@v2
@@ -415,11 +427,8 @@ jobs:
       - name: Проверка кода
         uses: actions/checkout@v6
 
-      - name: Получение общих build-ассетов
-        uses: actions/download-artifact@v7
-        with:
-          name: shared-build-assets
-          path: .
+      - name: Создание директории desktop-ассетов
+        run: mkdir -p assets/bin
 
       - name: Установка зависимостей Linux
         run: |

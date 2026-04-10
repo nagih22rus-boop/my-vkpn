@@ -50,6 +50,7 @@ class SettingsRepository {
       threads: prefs.getInt(_kThreads) ?? 8,
       wgConfigText: migratedWgConfigText ?? '',
       wgConfigFileName: prefs.getString(_kWgConfigFileName) ?? '',
+      excludedAppPackages: prefs.getString(_kExcludedAppPackages) ?? '',
     );
   }
 

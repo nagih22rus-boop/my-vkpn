@@ -86,8 +86,7 @@ jobs:
             ${{ runner.os }}-pub-
 
       - name: Install dependencies
-        run: |
-          flutter pub get || flutter pub get || flutter pub get
+        run: flutter pub get
 
       - name: Build APK
         run: flutter build apk --debug

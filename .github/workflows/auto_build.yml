@@ -31,15 +31,17 @@ jobs:
           fi
           echo "Current bundled version: $CURRENT_VERSION"
           
-          # Always build on manual workflow_dispatch, otherwise only on version change
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "Manual trigger - always build" >> $GITHUB_OUTPUT
+          # Check if this is a manual run (no vkturn_version.txt means first run)
+          if [ ! -f "vkturn_version.txt" ]; then
+            echo "First run - always build" >> $GITHUB_OUTPUT
             echo "should_build=true" >> $GITHUB_OUTPUT
             echo "new_version=$VK_VERSION" >> $GITHUB_OUTPUT
           elif [ "$VK_VERSION" != "$CURRENT_VERSION" ] && [ -n "$VK_VERSION" ]; then
+            echo "Version changed - building" >> $GITHUB_OUTPUT
             echo "should_build=true" >> $GITHUB_OUTPUT
             echo "new_version=$VK_VERSION" >> $GITHUB_OUTPUT
           else
+            echo "No version change - skipping build" >> $GITHUB_OUTPUT
             echo "should_build=false" >> $GITHUB_OUTPUT
             echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           fi

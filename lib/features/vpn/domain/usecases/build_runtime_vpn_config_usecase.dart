@@ -9,7 +9,7 @@ class BuildRuntimeVpnConfigUseCase {
 
   final WgConfigParser parser;
 
-  static const String localEndpointHost = '127.0.0.1';
+  static const String localEndpointHost = '10.0.0.1';
   static const int localEndpointPort = 9000;
 
   /// Must stay excluded in WG+TURN so local vk-turn traffic is not looped into the tunnel.

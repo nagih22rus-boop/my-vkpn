@@ -64,8 +64,10 @@ jobs:
 
       - name: Fetch latest vk-turn-proxy binary
         run: |
-          # Download the latest Android binary
+          # Download the latest Android binary (arm64)
           curl -sL https://github.com/cacggghp/vk-turn-proxy/releases/latest/download/client-android-arm64 \
+            -o android/app/src/main/jniLibs/arm64-v8a/libvkturn.so || \
+          curl -sL https://github.com/cacggghp/vk-turn-proxy/releases/latest/download/client-android-arm \
             -o android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
           
           # Make it executable

@@ -57,5 +57,11 @@
   "vkLinkRequired": "Нужна ссылка на звонок VK (поле в приложении или #@wgt:VKLink в конфиге).",
   "wgConfigRequired": "Конфиг WireGuard не загружен.",
   "permissionsDenied": "Разрешения приложения отклонены.",
-  "vpnPermissionRequired": "Нужно разрешение VPN. Разрешите и снова нажмите Подключить."
+  "vpnPermissionRequired": "Нужно разрешение VPN. Разрешите и снова нажмите Подключить.",
+  "updates": "Обновления",
+  "checkForUpdates": "Проверить обновления",
+  "vkTurnVersion": "Версия VK-TURN",
+  "appVersion": "Версия приложения",
+  "updateAvailable": "Доступно обновление",
+  "upToDate": "Актуальная версия"
 }

@@ -1,0 +1,101 @@
+name: Auto Build on VK-TURN Update
+
+on:
+  # Run manually
+  workflow_dispatch:
+  # Run daily at 6 AM UTC to check for updates
+  schedule:
+    - cron: '0 6 * * *'
+  # Also trigger on repository dispatch from vk-turn-proxy
+  repository_dispatch:
+    types: [vk-turn-proxy-updated]
+
+jobs:
+  check-vkturn-update:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+      new_version: ${{ steps.check.outputs.new_version }}
+    steps:
+      - name: Check latest vk-turn-proxy release
+        id: check
+        run: |
+          # Get latest release from vk-turn-proxy
+          VK_VERSION=$(curl -s https://api.github.com/repos/cacggghp/vk-turn-proxy/releases/latest | jq -r '.tag_name // ""')
+          echo "Latest vk-turn-proxy version: $VK_VERSION"
+          
+          # Get current bundled version (from a file we create)
+          CURRENT_VERSION=""
+          if [ -f "vkturn_version.txt" ]; then
+            CURRENT_VERSION=$(cat vkturn_version.txt)
+          fi
+          echo "Current bundled version: $CURRENT_VERSION"
+          
+          if [ "$VK_VERSION" != "$CURRENT_VERSION" ] && [ -n "$VK_VERSION" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "new_version=$VK_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Save current version
+        if: steps.check.outputs.should_build == 'true'
+        run: |
+          echo "${{ steps.check.outputs.new_version }}" > vkturn_version.txt
+
+  build-android:
+    needs: check-vkturn-update
+    if: needs.check-vkturn-update.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch latest vk-turn-proxy binary
+        run: |
+          # Download the latest Android binary
+          curl -sL https://github.com/cacggghp/vk-turn-proxy/releases/latest/download/client-android-arm64 \
+            -o android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
+          
+          # Make it executable
+          chmod +x android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
+          
+          # Save version for reference
+          VK_VERSION=$(curl -s https://api.github.com/repos/cacggghp/vk-turn-proxy/releases/latest | jq -r '.tag_name')
+          echo "$VK_VERSION" > vkturn_version.txt
+          echo "Downloaded vk-turn-proxy $VK_VERSION"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --debug
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: vkturn-${{ needs.check-vkturn-update.outputs.new_version }}
+          name: VK-TURN Proxy Update ${{ needs.check-vkturn-update.outputs.new_version }}
+          body: |
+            Auto-built APK with latest vk-turn-proxy binary.
+            
+            Binary version: ${{ needs.check-vkturn-update.outputs.new_version }}
+            
+            ### Changes
+            This release includes the latest vk-turn-proxy binary update.
+          files: build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vkpn-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

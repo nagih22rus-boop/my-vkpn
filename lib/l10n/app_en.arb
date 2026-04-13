@@ -78,5 +78,11 @@
   "vkLinkRequired": "VK call link is required (app field or #@wgt:VKLink in config).",
   "wgConfigRequired": "WireGuard config is not loaded.",
   "permissionsDenied": "App permissions denied.",
-  "vpnPermissionRequired": "VPN permission required. Allow it and tap Connect again."
+  "vpnPermissionRequired": "VPN permission required. Allow it and tap Connect again.",
+  "updates": "Updates",
+  "checkForUpdates": "Check for Updates",
+  "vkTurnVersion": "VK-TURN Version",
+  "appVersion": "App Version",
+  "updateAvailable": "Update available",
+  "upToDate": "Up to date"
 }

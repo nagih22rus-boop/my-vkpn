@@ -79,11 +79,18 @@ jobs:
 
       - name: Get dependencies
         run: |
-          # Try to restore cache
-          if [ -d "$HOME/.pub-cache" ]; then
-            echo "Cache found"
-          fi
-          flutter pub get
+          # Retry with exponential backoff
+          for i in 1 2 3 4 5; do
+            echo "Attempt $i..."
+            if flutter pub get; then
+              echo "Success!"
+              exit 0
+            fi
+            echo "Attempt $i failed, waiting..."
+            sleep $((i * 10))
+          done
+          echo "All attempts failed"
+          exit 1
 
       - name: Build APK
         run: flutter build apk --debug

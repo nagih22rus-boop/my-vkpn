@@ -79,15 +79,16 @@ jobs:
 
       - name: Get dependencies
         run: |
-          # Retry with exponential backoff
-          for i in 1 2 3 4 5; do
+          # Retry with longer exponential backoff
+          for i in 1 2 3 4 5 6 7 8; do
             echo "Attempt $i..."
             if flutter pub get; then
               echo "Success!"
               exit 0
             fi
-            echo "Attempt $i failed, waiting..."
-            sleep $((i * 10))
+            wait_time=$((i * 30))
+            echo "Attempt $i failed, waiting ${wait_time}s..."
+            sleep $wait_time
           done
           echo "All attempts failed"
           exit 1

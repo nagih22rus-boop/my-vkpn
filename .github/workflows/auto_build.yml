@@ -78,6 +78,14 @@ jobs:
           channel: 'stable'
 
       - name: Get dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
         run: |
           flutter pub get || flutter pub get || flutter pub get
 

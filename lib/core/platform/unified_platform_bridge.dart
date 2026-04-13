@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -6,6 +7,23 @@ import 'package:vkpn/features/vpn/domain/entities/wg_config.dart';
 class UnifiedPlatformBridge {
   static const MethodChannel _channel = MethodChannel('unified_vpn/methods');
   static const EventChannel _logsChannel = EventChannel('unified_vpn/logs');
+  
+  // Static callback for VPN toggle from Quick Settings Tile
+  static Future<void> Function()? onVpnToggleRequested;
+  
+  UnifiedPlatformBridge() {
+    _channel.setMethodCallHandler(_handleMethodCall);
+  }
+  
+  Future<dynamic> _handleMethodCall(MethodCall call) async {
+    if (call.method == 'onVpnToggleRequested') {
+      if (UnifiedPlatformBridge.onVpnToggleRequested != null) {
+        await UnifiedPlatformBridge.onVpnToggleRequested!();
+      }
+      return null;
+    }
+    throw MissingPluginException('${call.method} not implemented');
+  }
 
   Future<bool> prepareVpn() async {
     try {
@@ -40,6 +58,24 @@ class UnifiedPlatformBridge {
   Future<String> status() async {
     final result = await _channel.invokeMethod<String>('status');
     return result ?? 'unknown';
+  }
+
+  Future<String> getVkTurnVersion() async {
+    try {
+      final result = await _channel.invokeMethod<String>('getVkTurnVersion');
+      return result ?? 'unknown';
+    } on MissingPluginException {
+      return 'not available';
+    }
+  }
+
+  Future<String> getVkTurnSource() async {
+    try {
+      final result = await _channel.invokeMethod<String>('getVkTurnSource');
+      return result ?? 'unknown';
+    } on MissingPluginException {
+      return 'not available';
+    }
   }
 
   Future<Map<String, dynamic>> trafficStats() async {

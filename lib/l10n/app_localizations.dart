@@ -445,6 +445,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'VPN permission required. Allow it and tap Connect again.'**
   String get vpnPermissionRequired;
+
+  /// No description provided for @updates.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get updates;
+
+  /// No description provided for @checkForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for Updates'**
+  String get checkForUpdates;
+
+  /// No description provided for @vkTurnVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'VK-TURN Version'**
+  String get vkTurnVersion;
+
+  /// No description provided for @appVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'App Version'**
+  String get appVersion;
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get updateAvailable;
+
+  /// No description provided for @upToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date'**
+  String get upToDate;
 }
 
 class _AppLocalizationsDelegate

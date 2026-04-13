@@ -506,6 +506,8 @@ class _HomeViewState extends State<_HomeView> {
                           cubit.setUseUdp(v);
                         },
                         onOpenExcludedAppsPicker: _openExcludedAppsPicker,
+                        vkTurnVersion: state.vkTurnVersion,
+                        vkTurnSource: state.vkTurnSource,
                       ),
                         ],
                       ),

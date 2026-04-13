@@ -16,6 +16,8 @@ class AppSettingsSection extends StatelessWidget {
     required this.onClearCustomArb,
     required this.onUseUdpChanged,
     required this.onOpenExcludedAppsPicker,
+    this.vkTurnVersion,
+    this.vkTurnSource,
   });
 
   final String? localeCode;
@@ -24,6 +26,8 @@ class AppSettingsSection extends StatelessWidget {
   final TextEditingController threadsCtrl;
   final bool useUdp;
   final String excludedAppsSummary;
+  final String? vkTurnVersion;
+  final String? vkTurnSource;
   final ValueChanged<String?> onSetLocaleCode;
   final VoidCallback onPickCustomArb;
   final VoidCallback onExportCustomArb;
@@ -102,6 +106,21 @@ class AppSettingsSection extends StatelessWidget {
               onPressed: customArbContent == null ? null : onClearCustomArb,
               child: Text(tr(context, 'clearCustomArb', (l) => l.clearCustomArb)),
             ),
+            if (vkTurnVersion != null && vkTurnVersion!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Divider(color: Colors.white24),
+              const SizedBox(height: 8),
+              _fieldTitle('vk-turn'),
+              const SizedBox(height: 4),
+              Text(
+                '${vkTurnVersion ?? "?"} (${vkTurnSource ?? "bundled"})',
+                style: const TextStyle(
+                  color: Color(0xFF8AB4F8),
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 8),

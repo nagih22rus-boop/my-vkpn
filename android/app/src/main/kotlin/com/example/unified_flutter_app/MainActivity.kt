@@ -1,8 +1,11 @@
 package space.iscreation.vkpn
 
 import android.Manifest
-import android.content.pm.PackageManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -19,15 +22,45 @@ class MainActivity : FlutterActivity() {
     private var eventSink: EventChannel.EventSink? = null
     private var pendingPermissionResult: MethodChannel.Result? = null
     private var pendingPrepareResult: MethodChannel.Result? = null
+    private var methodChannel: MethodChannel? = null
+    
+    private val vpnToggleReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == "space.iscreation.vkpn.TOGGLE_VPN") {
+                // Send toggle event to Flutter
+                methodChannel?.invokeMethod("onVpnToggleRequested", null)
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         VpnRuntime.init(applicationContext)
         VpnRuntime.setLogSink { log -> emitLog(log) }
+        
+        // Register broadcast receiver for VPN toggle
+        val filter = IntentFilter("space.iscreation.vkpn.TOGGLE_VPN")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(vpnToggleReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(vpnToggleReceiver, filter)
+        }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            unregisterReceiver(vpnToggleReceiver)
+        } catch (e: Exception) {
+            // Receiver might not be registered
+        }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Initialize method channel for VPN toggle
+        methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "unified_vpn/methods")
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "unified_vpn/methods")
             .setMethodCallHandler { call, result ->
@@ -99,6 +132,11 @@ class MainActivity : FlutterActivity() {
                                     threads = threads,
                                     localEndpoint = "$localHost:$localPort"
                                 )
+                                // Update VPN active state for Quick Settings Tile
+                                getSharedPreferences("vkpn_prefs", MODE_PRIVATE)
+                                    .edit()
+                                    .putBoolean("vpn_active", true)
+                                    .apply()
                                 emitLog("Android: unified tunnel started")
                                 runOnUiThread { result.success(null) }
                             } catch (e: Throwable) {
@@ -112,6 +150,11 @@ class MainActivity : FlutterActivity() {
                     "stop" -> {
                         try {
                             VpnRuntime.stop()
+                            // Update VPN active state for Quick Settings Tile
+                            getSharedPreferences("vkpn_prefs", MODE_PRIVATE)
+                                .edit()
+                                .putBoolean("vpn_active", false)
+                                .apply()
                             emitLog("Android: unified tunnel stopped")
                             result.success(null)
                         } catch (e: Exception) {
@@ -119,6 +162,8 @@ class MainActivity : FlutterActivity() {
                         }
                     }
                     "status" -> result.success(VpnRuntime.getStatus())
+                    "getVkTurnVersion" -> result.success(VpnRuntime.getVkTurnVersion())
+                    "getVkTurnSource" -> result.success(VpnRuntime.getVkTurnSource())
                     "trafficStats" -> {
                         val (rx, tx) = VpnRuntime.trafficStats()
                         result.success(mapOf("rxBytes" to rx, "txBytes" to tx))
@@ -147,6 +192,11 @@ class MainActivity : FlutterActivity() {
                                 }
                             }
                         }.start()
+                    }
+                    "onVpnToggleRequested" -> {
+                        // This is handled by Flutter through event channel
+                        // Just acknowledge the request
+                        result.success(null)
                     }
                     else -> result.notImplemented()
                 }

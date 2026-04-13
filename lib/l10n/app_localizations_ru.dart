@@ -191,4 +191,22 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get vpnPermissionRequired =>
       'Нужно разрешение VPN. Разрешите и снова нажмите Подключить.';
+
+  @override
+  String get updates => 'Обновления';
+
+  @override
+  String get checkForUpdates => 'Проверить обновления';
+
+  @override
+  String get vkTurnVersion => 'Версия VK-TURN';
+
+  @override
+  String get appVersion => 'Версия приложения';
+
+  @override
+  String get updateAvailable => 'Доступно обновление';
+
+  @override
+  String get upToDate => 'Актуальная версия';
 }

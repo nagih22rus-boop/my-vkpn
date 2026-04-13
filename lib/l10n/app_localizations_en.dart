@@ -191,4 +191,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get vpnPermissionRequired =>
       'VPN permission required. Allow it and tap Connect again.';
+
+  @override
+  String get updates => 'Updates';
+
+  @override
+  String get checkForUpdates => 'Check for Updates';
+
+  @override
+  String get vkTurnVersion => 'VK-TURN Version';
+
+  @override
+  String get appVersion => 'App Version';
+
+  @override
+  String get updateAvailable => 'Update available';
+
+  @override
+  String get upToDate => 'Up to date';
 }

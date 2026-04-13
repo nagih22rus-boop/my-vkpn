@@ -29,6 +29,8 @@ class HomeState extends Equatable {
     this.batteryPromptShown = false,
     this.pendingBatteryPrompt = false,
     this.fieldsEpoch = 0,
+    this.vkTurnVersion = '',
+    this.vkTurnSource = '',
   });
 
   factory HomeState.fromAppSettings(AppSettings s) {
@@ -71,6 +73,8 @@ class HomeState extends Equatable {
   final bool batteryPromptShown;
   final bool pendingBatteryPrompt;
   final int fieldsEpoch;
+  final String vkTurnVersion;
+  final String vkTurnSource;
 
   HomeState copyWith({
     List<WgTunnelProfile>? profiles,
@@ -103,6 +107,8 @@ class HomeState extends Equatable {
     bool? pendingBatteryPrompt,
     bool clearPendingBatteryPrompt = false,
     int? fieldsEpoch,
+    String? vkTurnVersion,
+    String? vkTurnSource,
   }) {
     return HomeState(
       profiles: profiles ?? this.profiles,
@@ -138,6 +144,8 @@ class HomeState extends Equatable {
           ? false
           : (pendingBatteryPrompt ?? this.pendingBatteryPrompt),
       fieldsEpoch: fieldsEpoch ?? this.fieldsEpoch,
+      vkTurnVersion: vkTurnVersion ?? this.vkTurnVersion,
+      vkTurnSource: vkTurnSource ?? this.vkTurnSource,
     );
   }
 
@@ -166,5 +174,7 @@ class HomeState extends Equatable {
     batteryPromptShown,
     pendingBatteryPrompt,
     fieldsEpoch,
+    vkTurnVersion,
+    vkTurnSource,
   ];
 }

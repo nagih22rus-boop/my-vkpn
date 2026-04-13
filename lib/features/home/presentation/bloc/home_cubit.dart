@@ -32,6 +32,9 @@ import 'package:wireguard_flutter_plus/wireguard_flutter_platform_interface.dart
 import 'home_state.dart';
 
 class HomeCubit extends Cubit<HomeState> {
+  // Static reference to the current instance for Quick Settings Tile
+  static HomeCubit? _currentInstance;
+  
   HomeCubit({
     required SettingsRepository settingsRepository,
     required void Function(AppSettings settings) onAppSettingsUpdated,
@@ -60,7 +63,10 @@ class HomeCubit extends Cubit<HomeState> {
        _buildExcludedSummaryUseCase = BuildExcludedAppsSummaryUseCase(),
        _composeConfigButtonLabelUseCase = ComposeConfigButtonLabelUseCase(),
        _composeCurrentLocaleArbUseCase = ComposeCurrentLocaleArbUseCase(),
-       super(HomeState.fromAppSettings(bootstrapSettings));
+       super(HomeState.fromAppSettings(bootstrapSettings)) {
+    // Register this instance for Quick Settings Tile toggle
+    _currentInstance = this;
+  }
 
   final SettingsRepository _settingsRepo;
   final void Function(AppSettings settings) _onAppSettingsUpdated;
@@ -112,9 +118,23 @@ class HomeCubit extends Cubit<HomeState> {
 
   Future<void> start() async {
     await loadSettings();
+    await loadVkTurnVersion();
     _logSub = _bridge.logs().listen(_appendLogLine);
     _startTrafficPolling();
     await initCrossPlatformWireGuard();
+  }
+  
+  Future<void> loadVkTurnVersion() async {
+    if (!_isAndroid) return;
+    try {
+      final version = await _bridge.getVkTurnVersion();
+      final source = await _bridge.getVkTurnSource();
+      if (isClosed) return;
+      _appendLogLine('vk-turn version: $version (source: $source)');
+      emit(state.copyWith(vkTurnVersion: version, vkTurnSource: source));
+    } catch (e) {
+      // Ignore errors - version is optional
+    }
   }
 
   Future<void> checkBatteryOptimizationIfNeeded() async {
@@ -708,6 +728,25 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
+  /// Toggle VPN connection - called from Quick Settings Tile
+  Future<void> toggleVpn() async {
+    final status = state.status;
+    if (status == 'connected' || status == 'connecting') {
+      await disconnect();
+    } else {
+      await connect();
+    }
+  }
+
+  /// Static method to toggle VPN from Quick Settings Tile
+  /// Call this from UnifiedPlatformBridge callback
+  static Future<void> toggleVpnStatic() async {
+    final instance = _currentInstance;
+    if (instance != null && !instance.isClosed) {
+      await instance.toggleVpn();
+    }
+  }
+
   void clearLogs() {
     emit(state.copyWith(logs: <String>[]));
   }
@@ -798,6 +837,10 @@ class HomeCubit extends Cubit<HomeState> {
     _wgStageSub?.cancel();
     _wgTrafficSub?.cancel();
     await _desktopTurnRuntime.stop();
+    // Clear static reference for Quick Settings Tile
+    if (_currentInstance == this) {
+      _currentInstance = null;
+    }
     return super.close();
   }
 }

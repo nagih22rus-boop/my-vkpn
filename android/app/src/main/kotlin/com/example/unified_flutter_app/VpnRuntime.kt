@@ -78,4 +78,14 @@ object VpnRuntime {
 
     @Synchronized
     fun getStatus(): String = status
+
+    fun getVkTurnVersion(): String {
+        val ctx = appContext ?: return "unknown"
+        return VkTurnProcessManager.getVersion(ctx, ctx.filesDir, ctx.applicationInfo.nativeLibraryDir)
+    }
+
+    fun getVkTurnSource(): String {
+        val ctx = appContext ?: return "unknown"
+        return VkTurnProcessManager.getExecutableSource(ctx.filesDir, ctx.applicationInfo.nativeLibraryDir)
+    }
 }

@@ -1,5 +1,6 @@
 package space.iscreation.vkpn
 
+import android.content.Context
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -57,6 +58,37 @@ class VkTurnProcessManager(
                 return custom.absolutePath
             }
             return "$nativeLibraryDir/libvkturn.so"
+        }
+        
+        fun getVersion(context: Context, filesDir: File, nativeLibraryDir: String): String {
+            // First check if custom binary exists
+            val custom = File(filesDir, "custom_vkturn")
+            if (custom.exists()) {
+                return "custom"
+            }
+            
+            // Check if bundled binary exists in native library dir
+            val bundled = File(nativeLibraryDir, "libvkturn.so")
+            if (bundled.exists()) {
+                // Try to read version from assets
+                return try {
+                    val inputStream = context.assets.open("vkturn_version.txt")
+                    val version = inputStream.bufferedReader().use { it.readText().trim() }
+                    if (version.isNotEmpty()) {
+                        return version.removePrefix("v")
+                    }
+                    "bundled"
+                } catch (e: Exception) {
+                    "bundled"
+                }
+            }
+            
+            return "unknown"
+        }
+        
+        fun getExecutableSource(filesDir: File, nativeLibraryDir: String): String {
+            val custom = File(filesDir, "custom_vkturn")
+            return if (custom.exists()) "custom" else "bundled"
         }
     }
 }

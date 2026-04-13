@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:vkpn/core/l10n/l10n_helpers.dart';
+import 'package:vkpn/core/platform/unified_platform_bridge.dart';
 import 'package:vkpn/features/home/presentation/bloc/home_cubit.dart';
 import 'package:vkpn/features/home/presentation/home_page.dart';
 import 'package:vkpn/features/settings/data/file_picker_gateway_impl.dart';
@@ -103,6 +104,7 @@ class _VkpnAppState extends State<VkpnApp> {
   late AppSettings _appSettings;
   late final ValueNotifier<_AppL10nShell> _l10nShell;
   final FilePickerGatewayImpl _filePickerGateway = FilePickerGatewayImpl();
+  late final UnifiedPlatformBridge _platformBridge;
   /// Only [setState] when [Locale] changes so [MaterialApp] is not rebuilt on ARB-only updates.
   Locale? _trackedUserLocale;
 
@@ -124,6 +126,10 @@ class _VkpnAppState extends State<VkpnApp> {
     _l10nShell = ValueNotifier(_AppL10nShell.fromAppSettings(widget.initialSettings));
     _trackedUserLocale = _l10nShell.value.userLocale;
     _l10nShell.addListener(_onL10nShellChanged);
+    _platformBridge = UnifiedPlatformBridge();
+    
+    // Set up callback for Quick Settings Tile toggle
+    UnifiedPlatformBridge.onVpnToggleRequested = HomeCubit.toggleVpnStatic;
   }
 
   void _onL10nShellChanged() {

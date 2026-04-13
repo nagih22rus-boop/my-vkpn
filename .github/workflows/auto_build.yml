@@ -44,6 +44,16 @@ jobs:
         run: |
           echo "${{ steps.check.outputs.new_version }}" > vkturn_version.txt
 
+      - name: Copy version to Flutter assets
+        run: |
+          mkdir -p assets
+          if [ -f "vkturn_version.txt" ]; then
+            cp vkturn_version.txt assets/
+          else
+            # If not building, still copy current version
+            echo "${{ steps.check.outputs.new_version }}" > assets/vkturn_version.txt
+          fi
+
   build-android:
     needs: check-vkturn-update
     if: needs.check-vkturn-update.outputs.should_build == 'true'

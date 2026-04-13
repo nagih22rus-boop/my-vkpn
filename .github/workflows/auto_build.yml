@@ -78,7 +78,8 @@ jobs:
           channel: 'stable'
 
       - name: Get dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get || flutter pub get || flutter pub get
 
       - name: Build APK
         run: flutter build apk --debug

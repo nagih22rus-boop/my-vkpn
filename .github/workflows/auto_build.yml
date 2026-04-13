@@ -83,6 +83,12 @@ jobs:
       - name: Build APK
         run: flutter build apk --debug
 
+      - name: Rename APK
+        run: |
+          VERSION="${{ needs.check-vkturn-update.outputs.new_version }}"
+          cp build/app/outputs/flutter-apk/app-debug.apk "build/app/outputs/flutter-apk/my-vkpn-${VERSION}.apk"
+          ls -la build/app/outputs/flutter-apk/
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -95,7 +101,7 @@ jobs:
             
             ### Changes
             This release includes the latest vk-turn-proxy binary update.
-          files: build/app/outputs/flutter-apk/app-debug.apk
+          files: build/app/outputs/flutter-apk/my-vkpn-${{ needs.check-vkturn-update.outputs.new_version }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

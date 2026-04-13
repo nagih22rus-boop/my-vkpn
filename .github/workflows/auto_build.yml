@@ -78,15 +78,12 @@ jobs:
           channel: 'stable'
 
       - name: Get dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Install dependencies
-        run: flutter pub get
+        run: |
+          # Try to restore cache
+          if [ -d "$HOME/.pub-cache" ]; then
+            echo "Cache found"
+          fi
+          flutter pub get
 
       - name: Build APK
         run: flutter build apk --debug

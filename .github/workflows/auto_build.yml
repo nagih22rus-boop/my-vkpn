@@ -54,17 +54,20 @@ jobs:
 
       - name: Fetch latest vk-turn-proxy binary
         run: |
-          # Download the latest Android binary (arm64)
+          # Create directory if not exists
+          mkdir -p android/app/src/main/jniLibs/arm64-v8a
+          
+          # Download the latest Android binary (try arm64 first, then arm)
           curl -sL https://github.com/cacggghp/vk-turn-proxy/releases/latest/download/client-android-arm64 \
             -o android/app/src/main/jniLibs/arm64-v8a/libvkturn.so || \
           curl -sL https://github.com/cacggghp/vk-turn-proxy/releases/latest/download/client-android-arm \
             -o android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
           
-          # Make it executable
-          chmod +x android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
+          # Verify download
+          ls -la android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
           
           # Save version for reference
-          VK_VERSION=$(curl -s https://api.github.com/repos/cacggghp/vk-turn-proxy/releases/latest | jq -r '.tag_name')
+          VK_VERSION=$(curl -sL https://api.github.com/repos/cacggghp/vk-turn-proxy/releases/latest 2>/dev/null | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
           echo "$VK_VERSION" > vkturn_version.txt
           echo "Downloaded vk-turn-proxy $VK_VERSION"
 

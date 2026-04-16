@@ -48,3 +48,11 @@ app.*.map.json
 /assets/bin/
 /android/app/src/main/jniLibs/
 /android/keystore/
+
+# WGT auto-update package
+vkpn-upstream/
+vkpn-wgt.zip
+vkpn-wgt.conf
+
+# Scripts
+timestamp_append.ps1

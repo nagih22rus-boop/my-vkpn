@@ -73,6 +73,8 @@ jobs:
           git add android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
           git add assets/vkturn_version.txt
           git add android/app/src/main/assets/vkturn_version.txt
+          git add assets/app_version.txt
+          git add android/app/src/main/assets/app_version.txt
           git diff --cached --stat
           git commit -m "Update vk-turn-proxy binary to ${{ needs.check-vkturn-update.outputs.new_version }}"
           git push

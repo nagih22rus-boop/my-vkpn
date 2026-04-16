@@ -77,6 +77,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/vkpn_logo.png
+    - assets/app_version.txt
     - assets/vkturn_version.txt
     - lib/l10n/app_en.arb
     - lib/l10n/app_ru.arb

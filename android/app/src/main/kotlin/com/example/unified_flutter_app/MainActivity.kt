@@ -179,6 +179,8 @@ class MainActivity : FlutterActivity() {
                                     .putBoolean("vpn_active", true)
                                     .apply()
                                 emitLog("Android: unified tunnel started")
+                                // Schedule background update check
+                                UpdateWorker.enqueue(applicationContext)
                                 runOnUiThread { result.success(null) }
                             } catch (e: Throwable) {
                                 val details = "${e::class.java.name}: ${e.message ?: "no message"}"
@@ -197,6 +199,8 @@ class MainActivity : FlutterActivity() {
                                 .putBoolean("vpn_active", false)
                                 .apply()
                             emitLog("Android: unified tunnel stopped")
+                            // Cancel background update checks when VPN disconnects
+                            UpdateWorker.cancel(applicationContext)
                             result.success(null)
                         } catch (e: Exception) {
                             result.error("STOP_FAILED", e.message, null)
@@ -238,6 +242,66 @@ class MainActivity : FlutterActivity() {
                         // This is handled by Flutter through event channel
                         // Just acknowledge the request
                         result.success(null)
+                    }
+                    "hasPendingUpdate" -> {
+                        val prefs = getSharedPreferences("vkpn_prefs", MODE_PRIVATE)
+                        val updateFlag = prefs.getString(UpdateWorker.UPDATE_FLAG_KEY, null)
+                        result.success(updateFlag != null)
+                    }
+                    "getPendingVersion" -> {
+                        val prefs = getSharedPreferences("vkpn_prefs", MODE_PRIVATE)
+                        result.success(prefs.getString(UpdateWorker.UPDATE_FLAG_KEY, null))
+                    }
+                    "installPendingUpdate" -> {
+                        Thread {
+                            try {
+                                val prefs = getSharedPreferences("vkpn_prefs", MODE_PRIVATE)
+                                val apkPath = prefs.getString(UpdateWorker.UPDATE_PATH_KEY, null)
+                                if (apkPath != null) {
+                                    // Clear flag first so we don't show dialog again after install
+                                    prefs.edit()
+                                        .remove(UpdateWorker.UPDATE_FLAG_KEY)
+                                        .remove(UpdateWorker.UPDATE_PATH_KEY)
+                                        .remove(UpdateWorker.UPDATE_URL_KEY)
+                                        .apply()
+
+                                    runOnUiThread {
+                                        val uri = androidx.core.content.FileProvider.getUriForFile(
+                                            this@MainActivity,
+                                            "$packageName.fileprovider",
+                                            java.io.File(apkPath)
+                                        )
+                                        val installIntent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                            setDataAndType(uri, "application/vnd.android.package-archive")
+                                            flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                        }
+                                        startActivity(installIntent)
+                                    }
+                                }
+                                runOnUiThread { result.success(null) }
+                            } catch (e: Exception) {
+                                runOnUiThread { result.error("INSTALL_FAILED", e.message, null) }
+                            }
+                        }.start()
+                    }
+                    "dismissPendingUpdate" -> {
+                        Thread {
+                            try {
+                                val prefs = getSharedPreferences("vkpn_prefs", MODE_PRIVATE)
+                                val apkPath = prefs.getString(UpdateWorker.UPDATE_PATH_KEY, null)
+                                if (apkPath != null) {
+                                    java.io.File(apkPath).delete()
+                                }
+                                prefs.edit()
+                                    .remove(UpdateWorker.UPDATE_FLAG_KEY)
+                                    .remove(UpdateWorker.UPDATE_PATH_KEY)
+                                    .remove(UpdateWorker.UPDATE_URL_KEY)
+                                    .apply()
+                                runOnUiThread { result.success(null) }
+                            } catch (e: Exception) {
+                                runOnUiThread { result.error("DISMISS_FAILED", e.message, null) }
+                            }
+                        }.start()
                     }
                     else -> result.notImplemented()
                 }

@@ -115,4 +115,33 @@ class UnifiedPlatformBridge {
         .map((e) => e.toString())
         .handleError((_) {});
   }
+
+  /// Check if there's a pending APK update downloaded
+  Future<bool> hasPendingUpdate() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('hasPendingUpdate');
+      return result ?? false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
+  /// Get pending update version string
+  Future<String?> getPendingVersion() async {
+    try {
+      return await _channel.invokeMethod<String>('getPendingVersion');
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  /// Launch APK installer for pending update
+  Future<void> installPendingUpdate() async {
+    await _channel.invokeMethod<void>('installPendingUpdate');
+  }
+
+  /// Dismiss pending update (delete downloaded APK)
+  Future<void> dismissPendingUpdate() async {
+    await _channel.invokeMethod<void>('dismissPendingUpdate');
+  }
 }

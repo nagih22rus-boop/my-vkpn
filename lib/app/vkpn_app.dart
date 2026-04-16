@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:vkpn/core/l10n/l10n_helpers.dart';
+import 'package:vkpn/core/update/pending_update_checker.dart';
 import 'package:vkpn/core/platform/unified_platform_bridge.dart';
 import 'package:vkpn/features/home/presentation/bloc/home_cubit.dart';
 import 'package:vkpn/features/home/presentation/home_page.dart';
@@ -165,53 +166,55 @@ class _VkpnAppState extends State<VkpnApp> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => HomeCubit(
-        settingsRepository: widget.settingsRepository,
-        onAppSettingsUpdated: _onAppSettingsUpdated,
-        bootstrapSettings: _appSettings,
-        filePickerGateway: _filePickerGateway,
-      )..start(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: _vkpnTheme,
-        locale: _l10nShell.value.userLocale,
-        onGenerateTitle: (BuildContext context) =>
-            AppLocalizations.of(context)?.appTitle ?? 'VkPN',
-        localeResolutionCallback:
-            (Locale? deviceLocale, Iterable<Locale> supported) {
-          for (final Locale l in supported) {
-            if (l.languageCode == deviceLocale?.languageCode) {
-              return l;
+    return PendingUpdateChecker(
+      child: BlocProvider(
+        create: (_) => HomeCubit(
+          settingsRepository: widget.settingsRepository,
+          onAppSettingsUpdated: _onAppSettingsUpdated,
+          bootstrapSettings: _appSettings,
+          filePickerGateway: _filePickerGateway,
+        )..start(),
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: _vkpnTheme,
+          locale: _l10nShell.value.userLocale,
+          onGenerateTitle: (BuildContext context) =>
+              AppLocalizations.of(context)?.appTitle ?? 'VkPN',
+          localeResolutionCallback:
+              (Locale? deviceLocale, Iterable<Locale> supported) {
+            for (final Locale l in supported) {
+              if (l.languageCode == deviceLocale?.languageCode) {
+                return l;
+              }
             }
-          }
-          return supported.first;
-        },
-        localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (BuildContext context, Widget? child) {
-          return ValueListenableBuilder<_AppL10nShell>(
-            valueListenable: _l10nShell,
-            builder: (BuildContext context, _AppL10nShell shell, Widget? _) {
-              final Locale base = Localizations.localeOf(context);
-              final Locale effective = shell.userLocale ?? base;
-              return Localizations.override(
-                context: context,
-                locale: effective,
-                child: CustomArbScope(
-                  overrides: shell.arbMap,
-                  child: child ?? const SizedBox.shrink(),
-                ),
-              );
-            },
-          );
-        },
-        home: const HomeScreen(),
+            return supported.first;
+          },
+          localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (BuildContext context, Widget? child) {
+            return ValueListenableBuilder<_AppL10nShell>(
+              valueListenable: _l10nShell,
+              builder: (BuildContext context, _AppL10nShell shell, Widget? _) {
+                final Locale base = Localizations.localeOf(context);
+                final Locale effective = shell.userLocale ?? base;
+                return Localizations.override(
+                  context: context,
+                  locale: effective,
+                  child: CustomArbScope(
+                    overrides: shell.arbMap,
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                );
+              },
+            );
+          },
+          home: const HomeScreen(),
+        ),
       ),
     );
   }

@@ -1,14 +1,14 @@
 name: Auto Build on VK-TURN Update
 
 on:
-  # Run manually
   workflow_dispatch:
-  # Run daily at 6 AM UTC to check for updates
   schedule:
     - cron: '0 6 * * *'
-  # Also trigger on repository dispatch from vk-turn-proxy
   repository_dispatch:
     types: [vk-turn-proxy-updated]
+
+env:
+  VKTURN_REPO: cacggghp/vk-turn-proxy
 
 jobs:
   check-vkturn-update:
@@ -17,32 +17,42 @@ jobs:
       should_build: ${{ steps.check.outputs.should_build }}
       new_version: ${{ steps.check.outputs.new_version }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Check latest vk-turn-proxy release
         id: check
         run: |
-          # Get latest release from vk-turn-proxy
-          VK_VERSION=$(curl -sL https://api.github.com/repos/cacggghp/vk-turn-proxy/releases/latest 2>/dev/null | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
+          VK_VERSION=$(curl -sL "https://api.github.com/repos/${{ env.VKTURN_REPO }}/releases/latest" \
+            | grep -o '"tag_name": *"[^"]*"' \
+            | head -1 \
+            | cut -d'"' -f4)
           echo "Latest vk-turn-proxy version: $VK_VERSION"
-          
-          # Always build on workflow_dispatch (manual trigger)
-          echo "should_build=true" >> $GITHUB_OUTPUT
-          echo "new_version=$VK_VERSION" >> $GITHUB_OUTPUT
-          echo "Manual trigger - building APK"
 
-      - name: Save current version
-        if: steps.check.outputs.should_build == 'true'
-        run: |
-          echo "${{ steps.check.outputs.new_version }}" > vkturn_version.txt
-
-      - name: Copy version to Flutter assets
-        run: |
-          mkdir -p assets
-          if [ -f "vkturn_version.txt" ]; then
-            cp vkturn_version.txt assets/
-          else
-            # If not building, still copy current version
-            echo "${{ steps.check.outputs.new_version }}" > assets/vkturn_version.txt
+          if [ -z "$VK_VERSION" ]; then
+            echo "Failed to fetch latest version"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
+
+          # Read current version from tracked file
+          if [ -f "assets/vkturn_version.txt" ]; then
+            CURRENT_VERSION=$(cat assets/vkturn_version.txt)
+          else
+            CURRENT_VERSION=""
+          fi
+
+          echo "Current tracked version: $CURRENT_VERSION"
+
+          if [ "$VK_VERSION" = "$CURRENT_VERSION" ]; then
+            echo "No update needed (already at $VK_VERSION)"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "Update available: $CURRENT_VERSION -> $VK_VERSION"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+          echo "new_version=$VK_VERSION" >> $GITHUB_OUTPUT
 
   build-android:
     needs: check-vkturn-update
@@ -54,22 +64,36 @@ jobs:
 
       - name: Fetch latest vk-turn-proxy binary
         run: |
-          # Create directory if not exists
           mkdir -p android/app/src/main/jniLibs/arm64-v8a
-          
-          # Download the latest Android binary (try arm64 first, then arm)
-          curl -sL https://github.com/cacggghp/vk-turn-proxy/releases/latest/download/client-android-arm64 \
-            -o android/app/src/main/jniLibs/arm64-v8a/libvkturn.so || \
-          curl -sL https://github.com/cacggghp/vk-turn-proxy/releases/latest/download/client-android-arm \
+
+          # Download Android arm64 binary
+          curl -fL "https://github.com/${{ env.VKTURN_REPO }}/vk-turn-proxy/releases/latest/download/client-android-arm64" \
             -o android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
-          
+
           # Verify download
-          ls -la android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
-          
-          # Save version for reference
-          VK_VERSION=$(curl -sL https://api.github.com/repos/cacggghp/vk-turn-proxy/releases/latest 2>/dev/null | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
-          echo "$VK_VERSION" > vkturn_version.txt
-          echo "Downloaded vk-turn-proxy $VK_VERSION"
+          if [ ! -s android/app/src/main/jniLibs/arm64-v8a/libvkturn.so ]; then
+            echo "Binary download failed or is empty"
+            exit 1
+          fi
+          echo "Downloaded binary size: $(stat -c%s android/app/src/main/jniLibs/arm64-v8a/libvkturn.so) bytes"
+
+          # Update version file
+          VK_VERSION=$(curl -sL "https://api.github.com/repos/${{ env.VKTURN_REPO }}/releases/latest" \
+            | grep -o '"tag_name": *"[^"]*"' \
+            | head -1 \
+            | cut -d'"' -f4)
+          echo "$VK_VERSION" > assets/vkturn_version.txt
+          echo "Updated to version: $VK_VERSION"
+
+      - name: Commit updated binary and version
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add android/app/src/main/jniLibs/arm64-v8a/libvkturn.so
+          git add assets/vkturn_version.txt
+          git diff --cached --stat
+          git commit -m "Update vk-turn-proxy binary to ${{ needs.check-vkturn-update.outputs.new_version }}"
+          git push
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -96,12 +120,11 @@ jobs:
           name: VK-TURN Proxy Update ${{ needs.check-vkturn-update.outputs.new_version }}
           body: |
             Auto-built APK with latest vk-turn-proxy binary.
-            
+
             Binary version: ${{ needs.check-vkturn-update.outputs.new_version }}
-            
+
             ### Changes
             This release includes the latest vk-turn-proxy binary update.
           files: build/app/outputs/flutter-apk/my-vkpn-${{ needs.check-vkturn-update.outputs.new_version }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

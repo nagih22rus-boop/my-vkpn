@@ -12,6 +12,11 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import java.io.File
+import java.io.FileWriter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.wireguard.android.backend.GoBackend
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.android.FlutterActivity
@@ -23,6 +28,35 @@ class MainActivity : FlutterActivity() {
     private var pendingPermissionResult: MethodChannel.Result? = null
     private var pendingPrepareResult: MethodChannel.Result? = null
     private var methodChannel: MethodChannel? = null
+    
+    // Log file for external access via ADB
+    private var logFile: File? = null
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
+    
+    private fun getLogFile(): File {
+        if (logFile == null) {
+            // Use app's internal files directory (accessible via ADB run-as)
+            val logDir = File(filesDir, "logs")
+            if (!logDir.exists()) {
+                logDir.mkdirs()
+            }
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            logFile = File(logDir, "vkpn_log_$timestamp.txt")
+        }
+        return logFile!!
+    }
+    
+    private fun writeLogToFile(message: String) {
+        try {
+            val file = getLogFile()
+            val timestamp = dateFormat.format(Date())
+            FileWriter(file, true).use { writer ->
+                writer.appendLine("[$timestamp] $message")
+            }
+        } catch (e: Exception) {
+            // Silently fail - don't crash the app for logging issues
+        }
+    }
     
     private val vpnToggleReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -118,10 +152,17 @@ class MainActivity : FlutterActivity() {
                                 }
 
                                 emitLog("Android: mode = ${if (useTurnMode) "WG+TURN" else "WG"}")
+                                emitLog("Android: targetHost = $targetHost")
+                                emitLog("Android: proxyPort = $proxyPort")
+                                emitLog("Android: vkCallLink = [REDACTED]")
+                                emitLog("Android: localEndpoint = $localHost:$localPort")
+                                emitLog("Android: useUdp = $useUdp")
+                                emitLog("Android: threads = $threads")
                                 if (useTurnMode) {
                                     emitLog("Android: starting foreground service")
                                     emitLog("Android: starting vk-turn process")
                                 }
+                                // Start VPN with WireGuard + proxy
                                 VpnRuntime.start(
                                     useTurnMode = useTurnMode,
                                     rewritten = rewritten,
@@ -218,6 +259,9 @@ class MainActivity : FlutterActivity() {
 
     private fun emitLog(message: String) {
         val sanitized = sanitizeLogMessage(message)
+        // Write to file for ADB access
+        writeLogToFile(sanitized)
+        // Send to Flutter UI
         runOnUiThread {
             eventSink?.success(sanitized)
         }

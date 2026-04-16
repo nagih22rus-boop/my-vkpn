@@ -58,6 +58,29 @@ object VpnRuntime {
         status = "connected"
     }
 
+    // Start only proxy without VPN (for testing)
+    @Synchronized
+    fun startProxyOnly(
+        targetHost: String,
+        proxyPort: Int,
+        vkCallLink: String,
+        useUdp: Boolean,
+        threads: Int,
+        localEndpoint: String = "127.0.0.1:9000"
+    ) {
+        val ctx = appContext ?: throw IllegalStateException("VpnRuntime is not initialized")
+        ctx.startService(Intent(ctx, ProxyForegroundService::class.java))
+        vkTurnManager.start(
+            targetHost = targetHost,
+            proxyPort = proxyPort,
+            vkCallLink = vkCallLink,
+            useUdp = useUdp,
+            threads = threads,
+            localEndpoint = localEndpoint
+        )
+        status = "proxy_only"
+    }
+
     @Synchronized
     fun stop() {
         val ctx = appContext ?: throw IllegalStateException("VpnRuntime is not initialized")
